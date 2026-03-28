@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MindSpark — Number Guessing Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="noise"></div>
+
+  <div class="container">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo">MINDSPARK</div>
+      <div class="tagline">Level 1: Beginner &mdash; Number Guessing Game</div>
+    </header>
+
+    <!-- GAME SCREENS -->
+
+    <!-- SCREEN: START -->
+    <section class="screen active" id="screen-start">
+      <div class="card start-card">
+        <div class="badge">GAME START</div>
+        <h1 class="title">Can you read<br/><span class="accent">my mind?</span></h1>
+        <p class="desc">I've chosen a secret number between <strong>1 and 100</strong>. Use logic, intuition, and as few guesses as possible to find it. Each guess earns you feedback.</p>
+        <div class="difficulty-row">
+          <span class="diff-label">Choose difficulty:</span>
+          <div class="diff-btns">
+            <button class="diff-btn active" data-max="10" data-range="100">Easy</button>
+            <button class="diff-btn" data-max="7" data-range="100">Medium</button>
+            <button class="diff-btn" data-max="5" data-range="100">Hard</button>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-start">Start Game</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: PLAYING -->
+    <section class="screen" id="screen-game">
+      <div class="card game-card">
+        <div class="game-meta">
+          <div class="meta-block">
+            <span class="meta-label">Guesses Left</span>
+            <span class="meta-value" id="guesses-left">10</span>
+          </div>
+          <div class="meta-block">
+            <span class="meta-label">Range</span>
+            <span class="meta-value" id="range-display">1 – 100</span>
+          </div>
+          <div class="meta-block">
+            <span class="meta-label">Attempt</span>
+            <span class="meta-value" id="attempt-count">0</span>
+          </div>
+        </div>
+
+        <div class="feedback-zone" id="feedback-zone">
+          <div class="feedback-icon" id="feedback-icon">🤔</div>
+          <p class="feedback-text" id="feedback-text">Make your first guess!</p>
+        </div>
+
+        <div class="input-row">
+          <input type="number" id="guess-input" class="guess-input" placeholder="Enter number…" min="1" max="100"/>
+          <button class="btn-primary" id="btn-guess">GUESS</button>
+        </div>
+
+        <div class="history-section">
+          <span class="history-label">Guess History</span>
+          <div class="history-pills" id="history-pills"></div>
+        </div>
+
+        <button class="btn-ghost" id="btn-restart-mid">↩ Restart</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: WIN -->
+    <section class="screen" id="screen-win">
+      <div class="card result-card win-card">
+        <div class="result-emoji">🏆</div>
+        <h2 class="result-title">You cracked it!</h2>
+        <p class="result-sub" id="win-message">You found the number in X guesses!</p>
+        <div class="score-display" id="score-display"></div>
+        <button class="btn-primary" id="btn-play-again-win">Play Again</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: LOSE -->
+    <section class="screen" id="screen-lose">
+      <div class="card result-card lose-card">
+        <div class="result-emoji">💀</div>
+        <h2 class="result-title">Out of guesses!</h2>
+        <p class="result-sub" id="lose-message">The number was <strong id="reveal-number">??</strong>. Better luck next time.</p>
+        <button class="btn-primary" id="btn-play-again-lose">Try Again</button>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // ── GAME STATE ──────────────────────────────────────────────────────────
+    let secretNumber = 0;
+    let maxGuesses = 10;
+    let guessRange = 100;
+    let attemptsUsed = 0;
+    let guessHistory = [];
+    let selectedDiff = 'Easy';
+
+    // ── DOM REFS ─────────────────────────────────────────────────────────────
+    const screens = {
+      start: document.getElementById('screen-start'),
+      game:  document.getElementById('screen-game'),
+      win:   document.getElementById('screen-win'),
+      lose:  document.getElementById('screen-lose'),
+    };
+
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[name].classList.add('active');
+    }
+
+    // ── DIFFICULTY SELECTION ─────────────────────────────────────────────────
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        maxGuesses = parseInt(btn.dataset.max);
+        guessRange = parseInt(btn.dataset.range);
+        selectedDiff = btn.textContent;
+      });
+    });
+
+    // ── START GAME ──────────────────────────────────────────────────────────
+    document.getElementById('btn-start').addEventListener('click', startGame);
+
+    function startGame() {
+      secretNumber = Math.floor(Math.random() * guessRange) + 1;
+      attemptsUsed = 0;
+      guessHistory = [];
+      document.getElementById('guesses-left').textContent = maxGuesses;
+      document.getElementById('range-display').textContent = `1 – ${guessRange}`;
+      document.getElementById('attempt-count').textContent = '0';
+      document.getElementById('feedback-icon').textContent = '🤔';
+      document.getElementById('feedback-text').textContent = 'Make your first guess!';
+      document.getElementById('feedback-zone').className = 'feedback-zone';
+      document.getElementById('history-pills').innerHTML = '';
+      document.getElementById('guess-input').value = '';
+      showScreen('game');
+    }
+
+    // ── GUESS LOGIC ──────────────────────────────────────────────────────────
+    document.getElementById('btn-guess').addEventListener('click', processGuess);
+    document.getElementById('guess-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') processGuess();
+    });
+
+    function processGuess() {
+      const input = document.getElementById('guess-input');
+      const val = parseInt(input.value);
+
+      // Validate
+      if (isNaN(val) || val < 1 || val > guessRange) {
+        shakeInput();
+        setFeedback('⚠️', `Please enter a number between 1 and ${guessRange}.`, 'warn');
+        return;
+      }
+
+      attemptsUsed++;
+      const remaining = maxGuesses - attemptsUsed;
+      guessHistory.push({ val, result: val === secretNumber ? 'correct' : val < secretNumber ? 'low' : 'high' });
+
+      document.getElementById('attempt-count').textContent = attemptsUsed;
+      document.getElementById('guesses-left').textContent = Math.max(0, remaining);
+      renderHistory();
+      input.value = '';
+
+      // Conditional logic for game flow
+      if (val === secretNumber) {
+        // WIN
+        const score = calcScore();
+        document.getElementById('win-message').textContent =
+          `You found ${secretNumber} in ${attemptsUsed} guess${attemptsUsed !== 1 ? 'es' : ''}!`;
+        document.getElementById('score-display').textContent = `Score: ${score} pts`;
+        showScreen('win');
+      } else if (remaining <= 0) {
+        // LOSE
+        document.getElementById('reveal-number').textContent = secretNumber;
+        showScreen('lose');
+      } else {
+        // CONTINUE with conditional feedback
+        if (val < secretNumber) {
+          const diff = secretNumber - val;
+          if (diff > 30)      setFeedback('🥶', `Way too low! Think much higher.`, 'low');
+          else if (diff > 10) setFeedback('⬆️', `Too low — go higher!`, 'low');
+          else                setFeedback('🔥', `So close — just a bit higher!`, 'warm');
+        } else {
+          const diff = val - secretNumber;
+          if (diff > 30)      setFeedback('🌋', `Way too high! Think much lower.`, 'high');
+          else if (diff > 10) setFeedback('⬇️', `Too high — go lower!`, 'high');
+          else                setFeedback('🔥', `So close — just a bit lower!`, 'warm');
+        }
+        if (remaining === 1) {
+          setFeedback('😰', document.getElementById('feedback-text').textContent + ' LAST CHANCE!', 'warn');
+        }
+      }
+    }
+
+    function setFeedback(icon, text, type) {
+      document.getElementById('feedback-icon').textContent = icon;
+      document.getElementById('feedback-text').textContent = text;
+      const zone = document.getElementById('feedback-zone');
+      zone.className = 'feedback-zone ' + type;
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-pills');
+      container.innerHTML = '';
+      guessHistory.slice().reverse().forEach(g => {
+        const pill = document.createElement('span');
+        pill.className = `pill pill-${g.result}`;
+        pill.textContent = g.val;
+        container.appendChild(pill);
+      });
+    }
+
+    function calcScore() {
+      const base = 1000;
+      const penalty = attemptsUsed * 80;
+      return Math.max(100, base - penalty);
+    }
+
+    function shakeInput() {
+      const input = document.getElementById('guess-input');
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 500);
+    }
+
+    // ── RESTART BUTTONS ──────────────────────────────────────────────────────
+    document.getElementById('btn-restart-mid').addEventListener('click', () => showScreen('start'));
+    document.getElementById('btn-play-again-win').addEventListener('click', startGame);
+    document.getElementById('btn-play-again-lose').addEventListener('click', startGame);
+  </script>
+</body>
+</html>
